@@ -1,4 +1,4 @@
-// File: app/(tabs)/index.tsx
+// File: app/(tabs)/index.tsx - FIXED CHAT WITH KEYBOARD HANDLING
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -12,6 +12,8 @@ import {
   ActivityIndicator,
   Image,
   DeviceEventEmitter,
+  KeyboardAvoidingView,
+  Keyboard,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { IconSymbol } from "@/components/ui/IconSymbol";
@@ -40,6 +42,7 @@ export default function HomeScreen() {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Fetch user profile when component mounts or focuses
   useFocusEffect(
@@ -56,6 +59,23 @@ export default function HomeScreen() {
       DeviceEventEmitter.emit("showTabBar");
     }
   }, [showAIChat]);
+
+  // Handle keyboard events
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      (e) => setKeyboardHeight(e.endCoordinates.height)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => setKeyboardHeight(0)
+    );
+
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
+    };
+  }, []);
 
   const fetchUserProfile = async () => {
     try {
@@ -257,7 +277,11 @@ Remember: You are NOT a replacement for professional medical care. Always encour
 
   if (showAIChat) {
     return (
-      <View style={styles.chatFullScreen}>
+      <KeyboardAvoidingView
+        style={styles.chatFullScreen}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={0}
+      >
         <View style={styles.chatHeader}>
           <TouchableOpacity
             style={styles.backButton}
@@ -275,8 +299,12 @@ Remember: You are NOT a replacement for professional medical care. Always encour
 
         <ScrollView
           style={styles.chatContainer}
-          contentContainerStyle={styles.chatScrollContent}
+          contentContainerStyle={[
+            styles.chatScrollContent,
+            { paddingBottom: keyboardHeight > 0 ? 20 : 100 },
+          ]}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           {chatMessages.map(renderMessage)}
           {isLoading && (
@@ -287,7 +315,12 @@ Remember: You are NOT a replacement for professional medical care. Always encour
           )}
         </ScrollView>
 
-        <View style={styles.inputSection}>
+        <View
+          style={[
+            styles.inputSection,
+            keyboardHeight > 0 && { marginBottom: keyboardHeight - 20 },
+          ]}
+        >
           {image && (
             <View style={styles.imagePreview}>
               <Image source={{ uri: image.uri }} style={styles.previewImage} />
@@ -313,6 +346,7 @@ Remember: You are NOT a replacement for professional medical care. Always encour
               placeholderTextColor="#999"
               multiline
               maxLength={500}
+              blurOnSubmit={false}
             />
             <TouchableOpacity
               style={styles.imageButton}
@@ -337,7 +371,7 @@ Remember: You are NOT a replacement for professional medical care. Always encour
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     );
   }
 
@@ -466,7 +500,6 @@ Remember: You are NOT a replacement for professional medical care. Always encour
   );
 }
 
-// [Rest of styles remain the same as previous version]
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -661,7 +694,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // CHAT FULL SCREEN STYLES
+  // CHAT FULL SCREEN STYLES WITH KEYBOARD HANDLING
   chatFullScreen: {
     flex: 1,
     backgroundColor: "#f8fafe",
@@ -784,6 +817,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#e2e8f0",
     padding: 16,
+    paddingBottom: Platform.OS === "ios" ? 20 : 16,
   },
   imagePreview: {
     position: "relative",
@@ -816,6 +850,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#1e293b",
     maxHeight: 100,
+    minHeight: 40,
   },
   imageButton: {
     padding: 8,
