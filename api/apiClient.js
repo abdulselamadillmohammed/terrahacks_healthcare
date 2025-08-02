@@ -5,7 +5,7 @@ import * as SecureStore from "expo-secure-store";
 // 100.100.22.169 | 10.0.0.249 |
 // https://fd9fea87362e.ngrok-free.app
 // const API_BASE_URL = "http://100.100.22.169:8000/api/"; // EXAMPLE! Use your actual IP or ngrok URL.
-const API_BASE_URL = "https://8202ce24a02a.ngrok-free.app/api/";
+const API_BASE_URL = "https://8b285d984713.ngrok-free.app/api/";
 
 // --- 1. LOG THE BASE URL ON APP START ---
 console.log(`[apiClient] Initializing with API_BASE_URL: ${API_BASE_URL}`);
