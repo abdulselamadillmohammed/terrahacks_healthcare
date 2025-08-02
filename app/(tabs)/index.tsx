@@ -1,5 +1,5 @@
 // File: app/(tabs)/index.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,9 +11,11 @@ import {
   Platform,
   ActivityIndicator,
   Image,
+  DeviceEventEmitter,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+import { router, useFocusEffect } from "expo-router";
 import apiClient from "../../api/apiClient";
 
 interface ChatMessage {
@@ -21,21 +23,49 @@ interface ChatMessage {
   text: string;
   isUser: boolean;
   timestamp: Date;
+  image?: string;
 }
 
 export default function HomeScreen() {
   const [prompt, setPrompt] = useState("");
   const [image, setImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       id: "1",
-      text: "Hello! I'm your AI Health Assistant. I can help you understand symptoms and determine if you need medical attention. How can I help you today?",
+      text: "Hello! I'm your AI Health Assistant. I can help you understand symptoms and determine if you need medical attention. I have access to your medical profile to provide personalized guidance. How can I help you today?",
       isUser: false,
       timestamp: new Date(),
     },
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
+
+  // Fetch user profile when component mounts or focuses
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchUserProfile();
+    }, [])
+  );
+
+  // Handle tab bar visibility when entering/exiting chat mode
+  useEffect(() => {
+    if (showAIChat) {
+      DeviceEventEmitter.emit("hideTabBar");
+    } else {
+      DeviceEventEmitter.emit("showTabBar");
+    }
+  }, [showAIChat]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const response = await apiClient.get("/profile/");
+      setUserProfile(response.data);
+      console.log("User profile loaded for AI context:", response.data);
+    } catch (error) {
+      console.error("Failed to fetch user profile for AI:", error);
+    }
+  };
 
   const handleEmergencyCall = () => {
     Alert.alert(
@@ -90,11 +120,41 @@ export default function HomeScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 0.7,
+      base64: true, // We need base64 for Gemini API
     });
 
     if (!result.canceled) {
       setImage(result.assets[0]);
     }
+  };
+
+  const buildSystemPrompt = () => {
+    if (!userProfile) return "You are a helpful medical AI assistant.";
+
+    const profile = userProfile.profile || {};
+
+    return `You are VitalLink's AI Health Assistant. You have access to the user's medical profile to provide personalized health guidance.
+
+USER MEDICAL PROFILE:
+- Name: ${userProfile.username}
+- Date of Birth: ${profile.date_of_birth || "Not provided"}
+- Address: ${profile.address || "Not provided"}
+- Known Allergies: ${profile.allergies || "None listed"}
+- Pre-existing Conditions: ${profile.pre_existing_conditions || "None listed"}
+- Emergency Notes: ${profile.emergency_notes || "None listed"}
+
+INSTRUCTIONS:
+1. Use this medical profile to provide personalized health advice
+2. Consider their allergies when suggesting medications or treatments
+3. Take their pre-existing conditions into account
+4. If they describe symptoms that could be related to their conditions, mention this
+5. Always recommend seeking immediate medical attention for serious symptoms
+6. Be supportive and informative, but never replace professional medical care
+7. If they upload an image, analyze it in context of their medical history
+8. Keep responses concise but thorough (2-3 paragraphs max)
+9. Use a caring, professional tone
+
+Remember: You are NOT a replacement for professional medical care. Always encourage users to seek appropriate medical attention when needed.`;
   };
 
   const handleChatSubmit = async () => {
@@ -112,27 +172,27 @@ export default function HomeScreen() {
       text: prompt,
       isUser: true,
       timestamp: new Date(),
+      image: image?.uri,
     };
 
     setChatMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
-    const formData = new FormData();
-    formData.append("prompt", prompt);
-
-    if (image) {
-      const uri = image.uri;
-      const uriParts = uri.split(".");
-      const fileType = uriParts[uriParts.length - 1];
-
-      formData.append("image", {
-        uri,
-        name: `photo.${fileType}`,
-        type: `image/${fileType}`,
-      } as any);
-    }
-
     try {
+      // Call your backend which will forward to Gemini
+      const formData = new FormData();
+      formData.append("prompt", prompt);
+      formData.append("system_prompt", buildSystemPrompt());
+
+      if (image && image.base64) {
+        // For Gemini API, we need base64
+        formData.append("image_base64", image.base64);
+        formData.append(
+          "image_mime_type",
+          `image/${image.uri.split(".").pop()}`
+        );
+      }
+
       const res = await apiClient.post("/chatbot/", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -170,6 +230,9 @@ export default function HomeScreen() {
         message.isUser ? styles.userMessage : styles.aiMessage,
       ]}
     >
+      {message.image && (
+        <Image source={{ uri: message.image }} style={styles.messageImage} />
+      )}
       <Text
         style={[
           styles.messageText,
@@ -194,13 +257,14 @@ export default function HomeScreen() {
 
   if (showAIChat) {
     return (
-      <View style={styles.container}>
+      <View style={styles.chatFullScreen}>
         <View style={styles.chatHeader}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => setShowAIChat(false)}
           >
             <IconSymbol name="chevron.left" size={24} color="#2c5aa0" />
+            <Text style={styles.backText}>Back</Text>
           </TouchableOpacity>
           <Text style={styles.chatTitle}>AI Health Assistant</Text>
           <View style={styles.chatStatus}>
@@ -211,6 +275,7 @@ export default function HomeScreen() {
 
         <ScrollView
           style={styles.chatContainer}
+          contentContainerStyle={styles.chatScrollContent}
           showsVerticalScrollIndicator={false}
         >
           {chatMessages.map(renderMessage)}
@@ -332,15 +397,15 @@ export default function HomeScreen() {
             <View style={styles.aiHeaderText}>
               <Text style={styles.aiTitle}>AI Health Assistant</Text>
               <Text style={styles.aiSubtitle}>
-                Get preliminary health guidance
+                Get personalized health guidance
               </Text>
             </View>
           </View>
 
           <Text style={styles.aiDescription}>
-            Describe symptoms, upload images of concerning areas, or ask
-            health-related questions. Our AI can help determine if you need
-            professional medical attention.
+            Our AI knows your medical history and can provide personalized
+            advice. Describe symptoms, upload images, or ask health questions
+            for guidance tailored to your profile.
           </Text>
 
           <TouchableOpacity
@@ -357,17 +422,26 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle}>Quick Actions</Text>
 
         <View style={styles.quickActionsGrid}>
-          <TouchableOpacity style={styles.quickActionCard}>
+          <TouchableOpacity
+            style={styles.quickActionCard}
+            onPress={() => Alert.alert("Feature", "Calling 911...")}
+          >
             <IconSymbol name="phone.fill" size={24} color="#dc2626" />
             <Text style={styles.quickActionText}>Call 911</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.quickActionCard}>
+          <TouchableOpacity
+            style={styles.quickActionCard}
+            onPress={() => Alert.alert("Feature", "Sharing location...")}
+          >
             <IconSymbol name="location.fill" size={24} color="#16a34a" />
             <Text style={styles.quickActionText}>Share Location</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.quickActionCard}>
+          <TouchableOpacity
+            style={styles.quickActionCard}
+            onPress={() => router.push("/(tabs)/profile")}
+          >
             <IconSymbol
               name="person.crop.circle.fill"
               size={24}
@@ -376,7 +450,10 @@ export default function HomeScreen() {
             <Text style={styles.quickActionText}>My Profile</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.quickActionCard}>
+          <TouchableOpacity
+            style={styles.quickActionCard}
+            onPress={() => router.push("/(tabs)/explore")}
+          >
             <IconSymbol name="heart.fill" size={24} color="#ea580c" />
             <Text style={styles.quickActionText}>Health Tips</Text>
           </TouchableOpacity>
@@ -389,6 +466,7 @@ export default function HomeScreen() {
   );
 }
 
+// [Rest of styles remain the same as previous version]
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -397,9 +475,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
   },
-  // CRITICAL: This ensures content is never hidden behind the tab bar
   tabBarPadding: {
-    height: 120, // Accounts for tab bar height + safe area + extra margin
+    height: 120,
     backgroundColor: "transparent",
   },
   header: {
@@ -583,7 +660,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: "center",
   },
-  // AI Chat Styles
+
+  // CHAT FULL SCREEN STYLES
+  chatFullScreen: {
+    flex: 1,
+    backgroundColor: "#f8fafe",
+  },
   chatHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -596,7 +678,15 @@ const styles = StyleSheet.create({
     borderBottomColor: "#e2e8f0",
   },
   backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     padding: 8,
+  },
+  backText: {
+    fontSize: 16,
+    color: "#2c5aa0",
+    fontWeight: "500",
   },
   chatTitle: {
     fontSize: 18,
@@ -625,6 +715,9 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
+  chatScrollContent: {
+    flexGrow: 1,
+  },
   messageContainer: {
     marginBottom: 16,
     maxWidth: "80%",
@@ -634,6 +727,12 @@ const styles = StyleSheet.create({
   },
   aiMessage: {
     alignSelf: "flex-start",
+  },
+  messageImage: {
+    width: 200,
+    height: 150,
+    borderRadius: 12,
+    marginBottom: 8,
   },
   messageText: {
     fontSize: 16,

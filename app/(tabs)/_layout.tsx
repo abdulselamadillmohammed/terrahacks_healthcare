@@ -1,16 +1,39 @@
 // File: app/(tabs)/_layout.tsx
 import { Tabs } from "expo-router";
-import React from "react";
-import { Platform } from "react-native";
+import React, { useState, useEffect } from "react";
+import { Platform, DeviceEventEmitter } from "react-native";
 
 import { HapticTab } from "@/components/HapticTab";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import TabBarBackground from "@/components/ui/TabBarBackground";
-import { Colors } from "../../constants/Colors";
+import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const [hideTabBar, setHideTabBar] = useState(false);
+
+  useEffect(() => {
+    // Listen for events to show/hide tab bar
+    const showTabsListener = DeviceEventEmitter.addListener(
+      "showTabBar",
+      () => {
+        setHideTabBar(false);
+      }
+    );
+
+    const hideTabsListener = DeviceEventEmitter.addListener(
+      "hideTabBar",
+      () => {
+        setHideTabBar(true);
+      }
+    );
+
+    return () => {
+      showTabsListener.remove();
+      hideTabsListener.remove();
+    };
+  }, []);
 
   return (
     <Tabs
@@ -20,16 +43,18 @@ export default function TabLayout() {
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            position: "absolute",
-          },
-          default: {
-            backgroundColor: "#ffffff",
-            borderTopWidth: 1,
-            borderTopColor: "#e2e8f0",
-          },
-        }),
+        tabBarStyle: hideTabBar
+          ? { display: "none" }
+          : Platform.select({
+              ios: {
+                position: "absolute",
+              },
+              default: {
+                backgroundColor: "#ffffff",
+                borderTopWidth: 1,
+                borderTopColor: "#e2e8f0",
+              },
+            }),
       }}
     >
       <Tabs.Screen
