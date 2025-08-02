@@ -1,5 +1,5 @@
-// File: app/(tabs)/index.tsx - FIXED CHAT WITH KEYBOARD HANDLING
-import React, { useState, useEffect } from "react";
+// File: app/(tabs)/index.tsx - SMOOTH KEYBOARD HANDLING
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -12,8 +12,8 @@ import {
   ActivityIndicator,
   Image,
   DeviceEventEmitter,
-  KeyboardAvoidingView,
   Keyboard,
+  Animated,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { IconSymbol } from "@/components/ui/IconSymbol";
@@ -42,7 +42,10 @@ export default function HomeScreen() {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Animated value for smooth keyboard transitions
+  const keyboardHeight = useRef(new Animated.Value(0)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
 
   // Fetch user profile when component mounts or focuses
   useFocusEffect(
@@ -60,20 +63,38 @@ export default function HomeScreen() {
     }
   }, [showAIChat]);
 
-  // Handle keyboard events
+  // Handle keyboard events with smooth animations
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      "keyboardDidShow",
-      (e) => setKeyboardHeight(e.endCoordinates.height)
+    const keyboardWillShowListener = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      (e) => {
+        Animated.timing(keyboardHeight, {
+          duration: Platform.OS === "ios" ? e.duration || 250 : 250,
+          toValue: e.endCoordinates.height,
+          useNativeDriver: false,
+        }).start();
+
+        // Auto-scroll to bottom when keyboard appears
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      }
     );
-    const keyboardDidHideListener = Keyboard.addListener(
-      "keyboardDidHide",
-      () => setKeyboardHeight(0)
+
+    const keyboardWillHideListener = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      (e) => {
+        Animated.timing(keyboardHeight, {
+          duration: Platform.OS === "ios" ? e.duration || 250 : 250,
+          toValue: 0,
+          useNativeDriver: false,
+        }).start();
+      }
     );
 
     return () => {
-      keyboardDidShowListener?.remove();
-      keyboardDidHideListener?.remove();
+      keyboardWillShowListener?.remove();
+      keyboardWillHideListener?.remove();
     };
   }, []);
 
@@ -140,7 +161,7 @@ export default function HomeScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 0.7,
-      base64: true, // We need base64 for Gemini API
+      base64: true,
     });
 
     if (!result.canceled) {
@@ -198,14 +219,17 @@ Remember: You are NOT a replacement for professional medical care. Always encour
     setChatMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
+    // Auto-scroll to bottom after adding message
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+
     try {
-      // Call your backend which will forward to Gemini
       const formData = new FormData();
       formData.append("prompt", prompt);
       formData.append("system_prompt", buildSystemPrompt());
 
       if (image && image.base64) {
-        // For Gemini API, we need base64
         formData.append("image_base64", image.base64);
         formData.append(
           "image_mime_type",
@@ -217,7 +241,6 @@ Remember: You are NOT a replacement for professional medical care. Always encour
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // Add AI response to chat
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         text: res.data.response,
@@ -226,6 +249,11 @@ Remember: You are NOT a replacement for professional medical care. Always encour
       };
 
       setChatMessages((prev) => [...prev, aiMessage]);
+
+      // Auto-scroll to bottom after AI response
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
     } catch (error) {
       console.error("Chatbot error:", error);
       const errorMessage: ChatMessage = {
@@ -277,11 +305,7 @@ Remember: You are NOT a replacement for professional medical care. Always encour
 
   if (showAIChat) {
     return (
-      <KeyboardAvoidingView
-        style={styles.chatFullScreen}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={0}
-      >
+      <View style={styles.chatFullScreen}>
         <View style={styles.chatHeader}>
           <TouchableOpacity
             style={styles.backButton}
@@ -298,11 +322,9 @@ Remember: You are NOT a replacement for professional medical care. Always encour
         </View>
 
         <ScrollView
+          ref={scrollViewRef}
           style={styles.chatContainer}
-          contentContainerStyle={[
-            styles.chatScrollContent,
-            { paddingBottom: keyboardHeight > 0 ? 20 : 100 },
-          ]}
+          contentContainerStyle={styles.chatScrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -315,10 +337,12 @@ Remember: You are NOT a replacement for professional medical care. Always encour
           )}
         </ScrollView>
 
-        <View
+        <Animated.View
           style={[
             styles.inputSection,
-            keyboardHeight > 0 && { marginBottom: keyboardHeight - 20 },
+            {
+              marginBottom: keyboardHeight,
+            },
           ]}
         >
           {image && (
@@ -370,8 +394,8 @@ Remember: You are NOT a replacement for professional medical care. Always encour
               />
             </TouchableOpacity>
           </View>
-        </View>
-      </KeyboardAvoidingView>
+        </Animated.View>
+      </View>
     );
   }
 
@@ -494,7 +518,6 @@ Remember: You are NOT a replacement for professional medical care. Always encour
         </View>
       </View>
 
-      {/* CRITICAL: Bottom padding to ensure content is visible above tab bar */}
       <View style={styles.tabBarPadding} />
     </ScrollView>
   );
@@ -694,7 +717,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // CHAT FULL SCREEN STYLES WITH KEYBOARD HANDLING
+  // SMOOTH CHAT STYLES
   chatFullScreen: {
     flex: 1,
     backgroundColor: "#f8fafe",
@@ -750,6 +773,7 @@ const styles = StyleSheet.create({
   },
   chatScrollContent: {
     flexGrow: 1,
+    paddingBottom: 20,
   },
   messageContainer: {
     marginBottom: 16,
@@ -817,7 +841,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#e2e8f0",
     padding: 16,
-    paddingBottom: Platform.OS === "ios" ? 20 : 16,
   },
   imagePreview: {
     position: "relative",
