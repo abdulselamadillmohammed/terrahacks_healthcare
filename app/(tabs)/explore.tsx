@@ -1,110 +1,299 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+// File: app/(tabs)/explore.tsx
+import React from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Linking,
+} from "react-native";
+import { IconSymbol } from "@/components/ui/IconSymbol";
 
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+const healthTips = [
+  {
+    title: "Recognize Heart Attack Symptoms",
+    description:
+      "Chest pain, shortness of breath, nausea, and pain in arms, back, neck, or jaw.",
+    icon: "heart.fill",
+    color: "#dc2626",
+  },
+  {
+    title: "Stroke Warning Signs",
+    description:
+      "F.A.S.T. - Face drooping, Arms weak, Speech difficult, Time to call 911.",
+    icon: "brain.head.profile",
+    color: "#7c3aed",
+  },
+  {
+    title: "Severe Allergic Reactions",
+    description:
+      "Difficulty breathing, swelling, rapid pulse. Use EpiPen if available.",
+    icon: "exclamationmark.triangle.fill",
+    color: "#ea580c",
+  },
+  {
+    title: "Choking Response",
+    description:
+      "Heimlich maneuver: thrust upward into diaphragm until object dislodges.",
+    icon: "lungs.fill",
+    color: "#0891b2",
+  },
+];
 
-export default function TabTwoScreen() {
+const emergencyContacts = [
+  {
+    title: "Emergency Services",
+    number: "911",
+    description: "Police, Fire, Medical Emergency",
+    color: "#dc2626",
+  },
+  {
+    title: "Poison Control",
+    number: "1-800-222-1222",
+    description: "24/7 Poison Help Hotline",
+    color: "#16a34a",
+  },
+  {
+    title: "Crisis Text Line",
+    number: "Text HOME to 741741",
+    description: "Free 24/7 crisis support",
+    color: "#2563eb",
+  },
+];
+
+export default function ExploreScreen() {
+  const callEmergencyNumber = (number: string) => {
+    if (number.includes("Text")) return; // Skip text-based services
+
+    const phoneNumber = `tel:${number.replace(/[^\d]/g, "")}`;
+    Linking.openURL(phoneNumber);
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.header}>
+        <Text style={styles.title}>Health & Safety Resources</Text>
+        <Text style={styles.subtitle}>
+          Stay informed and prepared for medical emergencies
+        </Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Emergency Recognition</Text>
+        <Text style={styles.sectionDescription}>
+          Learn to identify critical medical emergencies
+        </Text>
+
+        {healthTips.map((tip, index) => (
+          <View key={index} style={styles.tipCard}>
+            <View style={styles.tipHeader}>
+              <View
+                style={[
+                  styles.iconContainer,
+                  { backgroundColor: `${tip.color}20` },
+                ]}
+              >
+                <IconSymbol
+                  name={tip.icon as any}
+                  size={24}
+                  color={tip.color}
+                />
+              </View>
+              <Text style={styles.tipTitle}>{tip.title}</Text>
+            </View>
+            <Text style={styles.tipDescription}>{tip.description}</Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Emergency Contacts</Text>
+        <Text style={styles.sectionDescription}>
+          Quick access to essential emergency numbers
+        </Text>
+
+        {emergencyContacts.map((contact, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.contactCard}
+            onPress={() => callEmergencyNumber(contact.number)}
+          >
+            <View style={styles.contactHeader}>
+              <View
+                style={[
+                  styles.iconContainer,
+                  { backgroundColor: `${contact.color}20` },
+                ]}
+              >
+                <IconSymbol name="phone.fill" size={20} color={contact.color} />
+              </View>
+              <View style={styles.contactInfo}>
+                <Text style={styles.contactTitle}>{contact.title}</Text>
+                <Text style={styles.contactNumber}>{contact.number}</Text>
+              </View>
+            </View>
+            <Text style={styles.contactDescription}>{contact.description}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <View style={styles.disclaimer}>
+        <Text style={styles.disclaimerTitle}>⚠️ Important Disclaimer</Text>
+        <Text style={styles.disclaimerText}>
+          This app provides general information and should not replace
+          professional medical advice. In a true emergency, always call 911
+          immediately.
+        </Text>
+      </View>
+
+      {/* CRITICAL: Bottom padding to ensure content is visible above tab bar */}
+      <View style={styles.tabBarPadding} />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: {
+    flex: 1,
+    backgroundColor: "#f8fafe",
   },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
+  scrollContent: {
+    flexGrow: 1,
+  },
+  // CRITICAL: This ensures content is never hidden behind the tab bar
+  tabBarPadding: {
+    height: 120, // Accounts for tab bar height + safe area + extra margin
+    backgroundColor: "transparent",
+  },
+  header: {
+    padding: 24,
+    paddingTop: 60,
+    backgroundColor: "#ffffff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#1e293b",
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#64748b",
+    lineHeight: 22,
+  },
+  section: {
+    padding: 24,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#1e293b",
+    marginBottom: 4,
+  },
+  sectionDescription: {
+    fontSize: 14,
+    color: "#64748b",
+    marginBottom: 20,
+  },
+  tipCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  tipHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  tipTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1e293b",
+    flex: 1,
+  },
+  tipDescription: {
+    fontSize: 14,
+    color: "#4b5563",
+    lineHeight: 20,
+  },
+  contactCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  contactHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  contactInfo: {
+    flex: 1,
+  },
+  contactTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1e293b",
+  },
+  contactNumber: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#2c5aa0",
+    marginTop: 2,
+  },
+  contactDescription: {
+    fontSize: 14,
+    color: "#64748b",
+  },
+  disclaimer: {
+    margin: 24,
+    padding: 20,
+    backgroundColor: "#fef3c7",
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: "#f59e0b",
+  },
+  disclaimerTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#92400e",
+    marginBottom: 8,
+  },
+  disclaimerText: {
+    fontSize: 14,
+    color: "#92400e",
+    lineHeight: 20,
   },
 });
