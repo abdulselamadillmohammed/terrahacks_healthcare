@@ -114,7 +114,7 @@ export default function LoginScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
-          <Text style={styles.appName}>VitalLink</Text>
+          <Text style={styles.appName}>VitaLink</Text>
           <Text style={styles.tagline}>Your lifeline in emergencies</Text>
         </View>
 

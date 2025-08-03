@@ -319,7 +319,7 @@ export default function HospitalProfileScreen() {
         <Text style={styles.supportTitle}>Need Help?</Text>
         <Text style={styles.supportText}>
           Contact our support team for assistance with your hospital dashboard
-          or VitalLink integration.
+          or VitaLink integration.
         </Text>
         <TouchableOpacity style={styles.supportButton}>
           <IconSymbol name="envelope.fill" size={16} color="#ffffff" />

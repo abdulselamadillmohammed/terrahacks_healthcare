@@ -230,7 +230,7 @@ export default function RegisterScreen() {
         console.log("Tokens saved successfully to SecureStore!");
 
         Alert.alert(
-          "Welcome to VitalLink!",
+          "Welcome to VitaLink!",
           "Your account has been created. Let's set up your medical profile next.",
           [
             {
@@ -510,7 +510,7 @@ export default function RegisterScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
-          <Text style={styles.appName}>VitalLink</Text>
+          <Text style={styles.appName}>VitaLink</Text>
           <Text style={styles.tagline}>Your lifeline in emergencies</Text>
         </View>
 
@@ -522,7 +522,7 @@ export default function RegisterScreen() {
           </Text>
           <Text style={styles.subtitle}>
             {userType === "patient"
-              ? "Join VitalLink to ensure help reaches you faster in emergencies"
+              ? "Join VitaLink to ensure help reaches you faster in emergencies"
               : "Register your hospital to provide emergency medical services"}
           </Text>
 

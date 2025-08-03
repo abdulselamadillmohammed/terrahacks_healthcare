@@ -15,7 +15,7 @@ export default function PendingVerificationScreen() {
         <Text style={styles.title}>Account Under Review</Text>
 
         <Text style={styles.description}>
-          Thank you for registering your hospital with VitalLink! Your account
+          Thank you for registering your hospital with VitaLink! Your account
           submission has been received and is currently under review by our
           administrative team.
         </Text>
@@ -51,7 +51,7 @@ export default function PendingVerificationScreen() {
           </Text>
           <Text style={styles.timelineSubtext}>
             We'll prioritize your application to get you connected to the
-            VitalLink emergency network as quickly as possible.
+            VitaLink emergency network as quickly as possible.
           </Text>
         </View>
 

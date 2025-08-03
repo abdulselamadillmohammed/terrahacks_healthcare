@@ -229,7 +229,7 @@ export default function HomeScreen() {
 
     const profile = userProfile.profile || {};
 
-    return `You are VitalLink's AI Health Assistant. You have access to the user's medical profile to provide personalized health guidance.
+    return `You are VitaLink's AI Health Assistant. You have access to the user's medical profile to provide personalized health guidance.
 
 USER MEDICAL PROFILE:
 - Name: ${userProfile.username}
@@ -461,7 +461,7 @@ Remember: You are NOT a replacement for professional medical care. Always encour
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <Text style={styles.appTitle}>VitalLink</Text>
+        <Text style={styles.appTitle}>VitaLink</Text>
         <Text style={styles.headerSubtitle}>AI-Powered Emergency Response</Text>
       </View>
 
