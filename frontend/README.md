@@ -84,7 +84,9 @@ This leads to:
 
 ---
 
-### 🔙 Backend Setup
+# VitaLink Healthcare Platform
+
+## 🔙 Backend Setup
 
 ```bash
 cd backend
@@ -125,7 +127,7 @@ Copy the ngrok HTTPS URL for frontend use.
 
 ---
 
-### 💻 Frontend Setup
+## 💻 Frontend Setup
 
 ```bash
 cd frontend
@@ -160,8 +162,6 @@ Our "Find Care" and "Emergency Dispatch" systems are powered by a multi-factor d
 
 Gemini AI returns a recommendation _with reasoning_, making the process transparent.
 
----
-
 ### 🩺 AI-Assisted Triage
 
 When a hospital admits a patient:
@@ -174,14 +174,9 @@ When a hospital admits a patient:
 
 ## 🔮 Future Work
 
-- **EMS & Paramedic Interface:**
-  Tablet app for ambulances to receive and send patient info in transit.
-
-- **Predictive Wait Times:**
-  Use historical queue data to forecast future hospital wait times.
-
-- **Direct EHR Integration:**
-  Build secure APIs to connect VitaLink with hospital EHR systems.
+- **EMS & Paramedic Interface:** Tablet app for ambulances to receive and send patient info in transit.
+- **Predictive Wait Times:** Use historical queue data to forecast future hospital wait times.
+- **Direct EHR Integration:** Build secure APIs to connect VitaLink with hospital EHR systems.
 
 ---
 
