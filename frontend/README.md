@@ -57,8 +57,6 @@ This leads to:
 - **Full Manual Control**  
   Staff can manually adjust all triage details as needed.
 
-> _(Screenshot placeholder: Hospital dashboard with triage system)_
-
 ---
 
 ## 🛠️ Tech Stack
