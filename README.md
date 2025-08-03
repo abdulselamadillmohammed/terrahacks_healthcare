@@ -93,7 +93,6 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-````
 
 Create a `.env` file in the `backend` folder:
 
@@ -190,4 +189,3 @@ When a hospital admits a patient:
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
-````
