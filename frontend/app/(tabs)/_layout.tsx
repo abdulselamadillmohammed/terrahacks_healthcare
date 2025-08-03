@@ -71,6 +71,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="explore"
+        options={{
+          title: "Explore",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="map.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",
@@ -80,15 +89,6 @@ export default function TabLayout() {
               name="person.crop.circle.fill"
               color={color}
             />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: "Health Tips",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="heart.text.square.fill" color={color} />
           ),
         }}
       />

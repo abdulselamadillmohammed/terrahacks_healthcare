@@ -1,13 +1,30 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# .gitignore (at the root of your project)
 
-# dependencies
+# General
+.DS_Store
+*.pem
+*.log
+
+# Environment Variables (IMPORTANT)
+.env
+.env.*
+
+# Python / Django
+__pycache__/
+*.pyc
+venv/
+/staticfiles/
+/media/
+
+# Node / Expo
 node_modules/
-
-# Expo
 .expo/
 dist/
 web-build/
 expo-env.d.ts
+npm-debug.*
+yarn-debug.*
+yarn-error.*
 
 # Native
 .kotlin/
@@ -21,19 +38,5 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
-.DS_Store
-*.pem
-
-# local env files
-.env*.local
-
-# typescript
+# TypeScript
 *.tsbuildinfo
-
-app-example

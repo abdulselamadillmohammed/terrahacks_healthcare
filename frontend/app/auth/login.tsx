@@ -1,4 +1,4 @@
-// File: app/auth/login.tsx
+// File: app/auth/login.tsx - Updated with Hospital Routing
 import React, { useState } from "react";
 import {
   View,
@@ -30,27 +30,78 @@ export default function LoginScreen() {
     setIsLoading(true);
 
     try {
-      const response = await apiClient.post("/token/", {
+      // Step 1: Get login tokens
+      const loginResponse = await apiClient.post("/token/", {
         username: username,
         password: password,
       });
 
-      console.log("Login response:", response.data);
+      console.log("Login response:", loginResponse.data);
 
-      // Store tokens using SecureStore (matching apiClient)
-      await SecureStore.setItemAsync("accessToken", response.data.access);
-      await SecureStore.setItemAsync("refreshToken", response.data.refresh);
-
-      console.log("Tokens saved successfully to SecureStore!");
-
-      // Navigate to main app
-      router.replace("/(tabs)");
-    } catch (error: any) {
-      console.error("Login error:", error.response?.data);
-      Alert.alert(
-        "Login Failed",
-        "Invalid username or password. Please try again."
+      // Step 2: Store tokens temporarily to check user profile
+      await SecureStore.setItemAsync("accessToken", loginResponse.data.access);
+      await SecureStore.setItemAsync(
+        "refreshToken",
+        loginResponse.data.refresh
       );
+
+      // Step 3: Check user profile to verify account status
+      try {
+        const profileResponse = await apiClient.get("/user/profile/");
+        const userData = profileResponse.data;
+
+        console.log("User data:", userData);
+
+        // Step 4: Check user type and verification status
+        if (userData.user_type === "hospital") {
+          if (!userData.is_verified) {
+            // Remove tokens for unverified hospital accounts
+            await SecureStore.deleteItemAsync("accessToken");
+            await SecureStore.deleteItemAsync("refreshToken");
+
+            Alert.alert(
+              "Account Pending Verification",
+              "Your hospital account is still under review by our administrative team. You will receive an email notification once your account is approved.\n\nPlease contact support if you have any questions.",
+              [{ text: "OK" }]
+            );
+            return;
+          } else {
+            // Verified hospital - redirect to hospital dashboard
+            console.log(
+              "Verified hospital login - redirecting to hospital tabs"
+            );
+            router.replace("/(hospital)/queue");
+          }
+        } else if (userData.user_type === "patient") {
+          // Patient login - redirect to patient tabs
+          console.log("Patient login successful - redirecting to patient tabs");
+          router.replace("/(tabs)");
+        }
+      } catch (profileError: any) {
+        console.error("Profile fetch error:", profileError);
+
+        // Remove tokens if profile fetch fails
+        await SecureStore.deleteItemAsync("accessToken");
+        await SecureStore.deleteItemAsync("refreshToken");
+
+        Alert.alert(
+          "Login Error",
+          "Unable to verify account status. Please try again or contact support."
+        );
+      }
+    } catch (loginError: any) {
+      console.error("Login error:", loginError.response?.data);
+
+      let errorMessage = "Invalid username or password. Please try again.";
+
+      // Handle specific error cases
+      if (loginError.response?.status === 401) {
+        errorMessage = "Invalid username or password.";
+      } else if (loginError.response?.status >= 500) {
+        errorMessage = "Server error. Please try again later.";
+      }
+
+      Alert.alert("Login Failed", errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -69,9 +120,7 @@ export default function LoginScreen() {
 
         <View style={styles.card}>
           <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>
-            Sign in to access your medical profile
-          </Text>
+          <Text style={styles.subtitle}>Sign in to access your account</Text>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Username</Text>
@@ -118,6 +167,28 @@ export default function LoginScreen() {
                 <Text style={styles.signupLink}>Create Account</Text>
               </TouchableOpacity>
             </Link>
+          </View>
+        </View>
+
+        <View style={styles.infoSection}>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>👥 Account Types</Text>
+            <Text style={styles.infoText}>
+              <Text style={styles.infoBold}>Patients:</Text> Access emergency
+              features and AI health assistant{"\n"}
+              <Text style={styles.infoBold}>Hospitals:</Text> Manage patient
+              queue and emergency responses
+            </Text>
+          </View>
+
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>🔐 Verification Status</Text>
+            <Text style={styles.infoText}>
+              <Text style={styles.infoBold}>Patients:</Text> Immediate access
+              after registration{"\n"}
+              <Text style={styles.infoBold}>Hospitals:</Text> Require admin
+              verification (1-3 business days)
+            </Text>
           </View>
         </View>
 
@@ -230,8 +301,33 @@ const styles = StyleSheet.create({
     color: "#2c5aa0",
     fontWeight: "600",
   },
+  infoSection: {
+    marginTop: 24,
+    gap: 12,
+  },
+  infoCard: {
+    backgroundColor: "#f0f9ff",
+    borderRadius: 12,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: "#0ea5e9",
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#0c4a6e",
+    marginBottom: 8,
+  },
+  infoText: {
+    fontSize: 14,
+    color: "#0369a1",
+    lineHeight: 20,
+  },
+  infoBold: {
+    fontWeight: "600",
+  },
   emergencyNotice: {
-    marginTop: 32,
+    marginTop: 24,
     padding: 16,
     backgroundColor: "#fef2f2",
     borderRadius: 12,

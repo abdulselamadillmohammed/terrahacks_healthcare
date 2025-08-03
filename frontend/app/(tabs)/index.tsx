@@ -1,4 +1,4 @@
-// File: app/(tabs)/index.tsx - SMOOTH KEYBOARD HANDLING
+// File: app/(tabs)/index.tsx - Enhanced with Emergency Dispatch
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -16,6 +16,7 @@ import {
   Animated,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { router, useFocusEffect } from "expo-router";
 import apiClient from "../../api/apiClient";
@@ -42,6 +43,7 @@ export default function HomeScreen() {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
+  const [emergencyLoading, setEmergencyLoading] = useState(false);
 
   // Animated value for smooth keyboard transitions
   const keyboardHeight = useRef(new Animated.Value(0)).current;
@@ -108,40 +110,93 @@ export default function HomeScreen() {
     }
   };
 
+  // Enhanced Emergency Function with AI Dispatch
   const handleEmergencyCall = () => {
     Alert.alert(
       "🚨 EMERGENCY CONFIRMATION",
-      "This will immediately dispatch emergency services to your location and share your medical profile.\n\nPress 'CALL EMERGENCY' only if this is a real medical emergency.",
+      "This will immediately dispatch emergency services to your location with AI-powered hospital selection.\n\nPress 'DISPATCH EMERGENCY' only if this is a real medical emergency.",
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "CALL EMERGENCY",
-          onPress: () => {
-            setIsLoading(true);
-            apiClient
-              .post("/emergency-call/")
-              .then((res) => {
-                Alert.alert(
-                  "🚨 EMERGENCY SERVICES CONTACTED",
-                  "Your emergency call has been processed. Emergency services have been notified and are on their way.\n\nStay calm and follow any instructions from emergency responders.",
-                  [{ text: "OK" }]
-                );
-                console.log(res.data.message);
-              })
-              .catch((err) => {
-                console.error("Emergency call error:", err);
-                Alert.alert(
-                  "❌ Emergency Call Failed",
-                  "Unable to reach emergency services through the app. Please dial 911 immediately.",
-                  [{ text: "OK" }]
-                );
-              })
-              .finally(() => setIsLoading(false));
-          },
+          text: "DISPATCH EMERGENCY",
+          onPress: handleEmergencyDispatch,
           style: "destructive",
         },
       ]
     );
+  };
+
+  const handleEmergencyDispatch = async () => {
+    setEmergencyLoading(true);
+
+    try {
+      // Get user's current location
+      console.log("🚨 Getting user location for emergency dispatch...");
+
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Location Required",
+          "Location access is required for emergency dispatch. Please enable location services.",
+          [{ text: "OK" }]
+        );
+        setEmergencyLoading(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      console.log("📍 Location acquired:", location.coords);
+
+      // Call the AI emergency dispatch endpoint
+      const dispatchResponse = await apiClient.post("/emergency/dispatch/", {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+
+      console.log("🏥 Emergency dispatch response:", dispatchResponse.data);
+
+      // Navigate to the dispatch in progress screen with the AI response data
+      router.push({
+        pathname: "/emergency-dispatch",
+        params: {
+          hospitalData: JSON.stringify(
+            dispatchResponse.data.recommended_hospital
+          ),
+          reasoning: dispatchResponse.data.reasoning,
+          ttsScript: dispatchResponse.data.tts_script_for_911,
+          userLatitude: location.coords.latitude.toString(),
+          userLongitude: location.coords.longitude.toString(),
+        },
+      });
+    } catch (error: any) {
+      console.error("❌ Emergency dispatch error:", error);
+
+      let errorMessage =
+        "Emergency dispatch system is unavailable. Please call 911 directly.";
+
+      if (error.response?.status === 503) {
+        errorMessage =
+          "No hospitals are currently available in the system. Please call 911 directly.";
+      } else if (error.response?.status === 400) {
+        errorMessage =
+          "Unable to determine your location. Please call 911 directly.";
+      }
+
+      Alert.alert("❌ Emergency Dispatch Failed", errorMessage, [
+        {
+          text: "Call 911 Now",
+          onPress: () => {
+            /* In a real app, this would dial 911 */
+          },
+        },
+        { text: "OK" },
+      ]);
+    } finally {
+      setEmergencyLoading(false);
+    }
   };
 
   const pickImage = async () => {
@@ -407,23 +462,26 @@ Remember: You are NOT a replacement for professional medical care. Always encour
     >
       <View style={styles.header}>
         <Text style={styles.appTitle}>VitalLink</Text>
-        <Text style={styles.headerSubtitle}>Emergency Response System</Text>
+        <Text style={styles.headerSubtitle}>AI-Powered Emergency Response</Text>
       </View>
 
       <View style={styles.emergencySection}>
         <View style={styles.emergencyCard}>
           <Text style={styles.emergencyTitle}>Medical Emergency</Text>
           <Text style={styles.emergencySubtitle}>
-            Press only in a real emergency
+            AI will select the best hospital for you
           </Text>
 
           <TouchableOpacity
-            style={[styles.emergencyButton, isLoading && styles.disabledButton]}
+            style={[
+              styles.emergencyButton,
+              (isLoading || emergencyLoading) && styles.disabledButton,
+            ]}
             onPress={handleEmergencyCall}
-            disabled={isLoading}
+            disabled={isLoading || emergencyLoading}
             activeOpacity={0.8}
           >
-            {isLoading ? (
+            {emergencyLoading ? (
               <ActivityIndicator color="#fff" size="large" />
             ) : (
               <>
@@ -438,8 +496,8 @@ Remember: You are NOT a replacement for professional medical care. Always encour
           </TouchableOpacity>
 
           <Text style={styles.emergencyNote}>
-            Your location and medical profile will be instantly shared with
-            emergency services
+            AI will analyze hospitals, wait times, and your medical profile to
+            dispatch you to the optimal facility
           </Text>
         </View>
       </View>
@@ -512,8 +570,8 @@ Remember: You are NOT a replacement for professional medical care. Always encour
             style={styles.quickActionCard}
             onPress={() => router.push("/(tabs)/explore")}
           >
-            <IconSymbol name="heart.fill" size={24} color="#ea580c" />
-            <Text style={styles.quickActionText}>Health Tips</Text>
+            <IconSymbol name="map.fill" size={24} color="#ea580c" />
+            <Text style={styles.quickActionText}>Find Hospitals</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -523,6 +581,7 @@ Remember: You are NOT a replacement for professional medical care. Always encour
   );
 }
 
+// Styles remain exactly the same as the original
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -717,7 +776,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // SMOOTH CHAT STYLES
+  // SMOOTH CHAT STYLES (unchanged)
   chatFullScreen: {
     flex: 1,
     backgroundColor: "#f8fafe",
