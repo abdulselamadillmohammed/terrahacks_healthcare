@@ -43,7 +43,6 @@ This leads to:
   - AI-powered speech recognition with intent classification
   - Automatic emergency dispatch or care routing
 
-> _(GIF placeholder: Patient app demo – map, care finder, emergency button, voice assistant)_
 
 ---
 
