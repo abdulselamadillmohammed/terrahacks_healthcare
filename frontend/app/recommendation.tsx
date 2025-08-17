@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+import { useVoiceAssistantContext } from "@/components/VoiceAssistantProvider";
 
 interface HospitalData {
   id: number;
@@ -25,10 +26,12 @@ interface HospitalData {
 
 export default function RecommendationScreen() {
   const params = useLocalSearchParams();
+  const { speak } = useVoiceAssistantContext();
   const [hospitalData, setHospitalData] = useState<HospitalData | null>(null);
   const [reasoning, setReasoning] = useState<string>("");
   const [requestId, setRequestId] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [isVoiceTriggered, setIsVoiceTriggered] = useState(false);
 
   useEffect(() => {
     // Parse the data passed from the care request
@@ -45,6 +48,13 @@ export default function RecommendationScreen() {
       if (params.requestId) {
         setRequestId(params.requestId as string);
       }
+
+      // Check if this was triggered by voice assistant
+      if (params.source === 'voice_assistant') {
+        setIsVoiceTriggered(true);
+        // Provide voice feedback for voice-triggered care requests
+        speak("I've found a hospital that can help with your symptoms. Here are the details.");
+      }
     } catch (error) {
       console.error("Error parsing recommendation data:", error);
       Alert.alert(
@@ -55,7 +65,7 @@ export default function RecommendationScreen() {
     } finally {
       setLoading(false);
     }
-  }, []); // EMPTY DEPENDENCY ARRAY - ONLY RUN ONCE
+  }, [params, speak]); // Added speak to dependencies
 
   const formatWaitTime = (minutes: number): string => {
     if (minutes < 60) {

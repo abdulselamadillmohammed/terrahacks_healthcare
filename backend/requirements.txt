@@ -16,3 +16,5 @@ boto3
 django-storages
 google-generativeai
 pymongo[srv]==3.12
+SpeechRecognition
+PyAudio

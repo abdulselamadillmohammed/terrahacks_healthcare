@@ -36,7 +36,14 @@ This leads to:
   - Chooses the optimal hospital
   - Prepares a voice script for emergency services
 
-> _(GIF placeholder: Patient app demo – map, care finder, emergency button)_
+- **🎤 Voice Assistant**  
+  **NEW!** Hands-free voice commands for emergency situations:
+  - Perfect when driving or when hands are injured
+  - Say "emergency" or describe symptoms to get immediate help
+  - AI-powered speech recognition with intent classification
+  - Automatic emergency dispatch or care routing
+
+> _(GIF placeholder: Patient app demo – map, care finder, emergency button, voice assistant)_
 
 ---
 
@@ -69,8 +76,30 @@ This leads to:
 | Backend        | Django, Python, Django REST Framework          |
 | Databases      | PostgreSQL (via Supabase), MongoDB (via Atlas) |
 | AI Engine      | Google Gemini API                              |
+| Voice Processing| Speech Recognition, Text-to-Speech            |
 | Services       | Twilio (Voice), ngrok                          |
 | Infrastructure | Docker, Raspberry Pi (planned edge device)     |
+
+---
+
+## 🎤 Voice Assistant Features
+
+### **Hands-Free Emergency Access**
+- **Voice Commands**: Say "emergency" or describe symptoms to trigger immediate help
+- **Driving Safety**: Keep hands on the wheel while getting medical assistance
+- **Injury-Friendly**: Access help even when hands are injured or unavailable
+- **AI Intent Classification**: Automatically routes to emergency dispatch or care requests
+
+### **Smart Voice Recognition**
+- **Real-time Processing**: Converts speech to text with high accuracy
+- **Intent Detection**: AI classifies whether it's an emergency or care request
+- **Context Awareness**: Understands medical terminology and symptoms
+- **Fallback Support**: Works even with poor audio quality
+
+### **Voice Feedback**
+- **Text-to-Speech**: Provides spoken responses and confirmations
+- **Status Updates**: Voice notifications about hospital routing
+- **Instructions**: Spoken guidance for next steps
 
 ---
 
@@ -173,6 +202,18 @@ When a hospital admits a patient:
 
 ---
 
+### 🎤 Voice Assistant Workflow
+
+1. **Voice Input**: User speaks symptoms or emergency situation
+2. **Speech Recognition**: Audio converted to text using Google Speech Recognition
+3. **Intent Classification**: Gemini AI analyzes text to determine intent (emergency vs care)
+4. **Action Routing**: Automatically triggers appropriate response:
+   - Emergency → Emergency Dispatch
+   - Care Request → Hospital Recommendation
+5. **Voice Feedback**: Text-to-speech confirms actions and provides guidance
+
+---
+
 ## 🔮 Future Work
 
 - **EMS & Paramedic Interface:**
@@ -183,6 +224,11 @@ When a hospital admits a patient:
 
 - **Direct EHR Integration:**
   Build secure APIs to connect VitaLink with hospital EHR systems.
+
+- **Advanced Voice Features:**
+  - Multi-language support
+  - Voice biometrics for user identification
+  - Integration with smart home devices
 
 ---
 

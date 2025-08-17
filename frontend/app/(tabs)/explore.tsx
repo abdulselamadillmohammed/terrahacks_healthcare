@@ -21,6 +21,7 @@ import * as Location from "expo-location";
 import { router } from "expo-router";
 import apiClient from "../../api/apiClient";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+import { useVoiceAssistantContext } from "@/components/VoiceAssistantProvider";
 
 interface Hospital {
   id: number;
@@ -95,7 +96,8 @@ const emergencyContacts = [
 ];
 
 export default function ExploreScreen() {
-  const [activeTab, setActiveTab] = useState<"map" | "resources">("map");
+  const { speak, showVoiceAssistant } = useVoiceAssistantContext();
+  const [activeTab, setActiveTab] = useState<"map" | "resources" | "voice">("map");
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [loading, setLoading] = useState(true);
@@ -187,6 +189,88 @@ export default function ExploreScreen() {
 
     return hospitalsWithScores[0];
   };
+
+  // Voice Assistant Content
+  const renderVoiceAssistantContent = () => (
+    <ScrollView style={styles.voiceAssistantContainer}>
+      <View style={styles.voiceAssistantHeader}>
+        <IconSymbol name="mic.fill" size={48} color="#007AFF" />
+        <Text style={styles.voiceAssistantTitle}>Voice Assistant</Text>
+        <Text style={styles.voiceAssistantSubtitle}>
+          Get help hands-free when you can't use your phone
+        </Text>
+      </View>
+
+      <View style={styles.voiceAssistantFeatures}>
+        <View style={styles.featureCard}>
+          <IconSymbol name="exclamationmark.triangle.fill" size={32} color="#FF3B30" />
+          <Text style={styles.featureTitle}>Emergency Voice Commands</Text>
+          <Text style={styles.featureDescription}>
+            Say "emergency" or describe your symptoms to get immediate help
+          </Text>
+        </View>
+
+        <View style={styles.featureCard}>
+          <IconSymbol name="heart.fill" size={32} color="#34C759" />
+          <Text style={styles.featureTitle}>Care Request Voice Commands</Text>
+          <Text style={styles.featureDescription}>
+            Describe your symptoms to find the right hospital for your needs
+          </Text>
+        </View>
+
+        <View style={styles.featureCard}>
+          <IconSymbol name="car.fill" size={32} color="#FF9500" />
+          <Text style={styles.featureTitle}>Perfect for Driving</Text>
+          <Text style={styles.featureDescription}>
+            Keep your hands on the wheel while getting medical assistance
+          </Text>
+        </View>
+
+        <View style={styles.featureCard}>
+          <IconSymbol name="hand.raised.fill" size={32} color="#AF52DE" />
+          <Text style={styles.featureTitle}>Injury-Friendly</Text>
+          <Text style={styles.featureDescription}>
+            Get help even when you can't use your hands due to injury
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.voiceAssistantActions}>
+        <TouchableOpacity
+          style={styles.voiceAssistantButton}
+          onPress={showVoiceAssistant}
+        >
+          <IconSymbol name="mic.fill" size={24} color="#fff" />
+          <Text style={styles.voiceAssistantButtonText}>Try Voice Assistant</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.demoButton}
+          onPress={() => speak("Voice assistant demo activated. You can test voice commands without actual voice input.")}
+        >
+          <Text style={styles.demoButtonText}>Demo Mode</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.voiceAssistantExamples}>
+        <Text style={styles.examplesTitle}>Example Voice Commands:</Text>
+        
+        <View style={styles.exampleSection}>
+          <Text style={styles.exampleSectionTitle}>🚨 Emergency:</Text>
+          <Text style={styles.exampleText}>• "I'm having chest pain"</Text>
+          <Text style={styles.exampleText}>• "Help, I can't breathe"</Text>
+          <Text style={styles.exampleText}>• "Emergency, I need an ambulance"</Text>
+        </View>
+
+        <View style={styles.exampleSection}>
+          <Text style={styles.exampleSectionTitle}>🏥 Care Request:</Text>
+          <Text style={styles.exampleText}>• "I have a fever and headache"</Text>
+          <Text style={styles.exampleText}>• "My hand is cut and bleeding"</Text>
+          <Text style={styles.exampleText}>• "I feel dizzy and nauseous"</Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
 
   // Then replace your renderFindCareModal function with this improved version:
   const renderFindCareModal = () => (
@@ -569,6 +653,28 @@ export default function ExploreScreen() {
           Health Tips
         </Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[
+          styles.tabButton,
+          activeTab === "voice" && styles.tabButtonActive,
+        ]}
+        onPress={() => setActiveTab("voice")}
+      >
+        <IconSymbol
+          name="mic.fill"
+          size={20}
+          color={activeTab === "voice" ? "#ffffff" : "#64748b"}
+        />
+        <Text
+          style={[
+            styles.tabButtonText,
+            activeTab === "voice" && styles.tabButtonTextActive,
+          ]}
+        >
+          Voice Assistant
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -905,7 +1011,12 @@ export default function ExploreScreen() {
 
       {renderTabSelector()}
 
-      {activeTab === "map" ? renderMapContent() : renderResourcesContent()}
+      {activeTab === "map" 
+        ? renderMapContent() 
+        : activeTab === "resources" 
+        ? renderResourcesContent() 
+        : renderVoiceAssistantContent()
+      }
 
       {/* Render Find Care Modal */}
       {renderFindCareModal()}
@@ -1399,5 +1510,122 @@ const styles = StyleSheet.create({
   tabBarPadding: {
     height: 120,
     backgroundColor: "transparent",
+  },
+  // Voice Assistant Styles
+  voiceAssistantContainer: {
+    flex: 1,
+    backgroundColor: "#f8fafe",
+  },
+  voiceAssistantHeader: {
+    alignItems: "center",
+    padding: 32,
+    backgroundColor: "#ffffff",
+  },
+  voiceAssistantTitle: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#1e293b",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  voiceAssistantSubtitle: {
+    fontSize: 16,
+    color: "#64748b",
+    textAlign: "center",
+    lineHeight: 22,
+  },
+  voiceAssistantFeatures: {
+    padding: 24,
+  },
+  featureCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  featureTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1e293b",
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  featureDescription: {
+    fontSize: 14,
+    color: "#64748b",
+    lineHeight: 20,
+  },
+  voiceAssistantActions: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  voiceAssistantButton: {
+    backgroundColor: "#007AFF",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  voiceAssistantButtonText: {
+    color: "#ffffff",
+    fontSize: 18,
+    fontWeight: "600",
+    marginLeft: 8,
+  },
+  demoButton: {
+    backgroundColor: "#E5E5EA",
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  demoButtonText: {
+    color: "#666666",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  voiceAssistantExamples: {
+    padding: 24,
+    backgroundColor: "#ffffff",
+    margin: 24,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  examplesTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#1e293b",
+    marginBottom: 16,
+  },
+  exampleSection: {
+    marginBottom: 16,
+  },
+  exampleSectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1e293b",
+    marginBottom: 8,
+  },
+  exampleText: {
+    fontSize: 14,
+    color: "#64748b",
+    marginBottom: 4,
+    paddingLeft: 8,
   },
 });

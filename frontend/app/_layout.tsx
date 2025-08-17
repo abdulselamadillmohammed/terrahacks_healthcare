@@ -12,6 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
+import VoiceAssistantProvider from "@/components/VoiceAssistantProvider";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -25,21 +26,23 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        {/* Authentication screens */}
-        <Stack.Screen name="auth" />
+      <VoiceAssistantProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+          {/* Authentication screens */}
+          <Stack.Screen name="auth" />
 
-        {/* Main app tabs */}
-        <Stack.Screen name="(tabs)" />
+          {/* Main app tabs */}
+          <Stack.Screen name="(tabs)" />
 
-        {/* 404 screen */}
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
+          {/* 404 screen */}
+          <Stack.Screen name="+not-found" />
+        </Stack>
+        <StatusBar style="auto" />
+      </VoiceAssistantProvider>
     </ThemeProvider>
   );
 }

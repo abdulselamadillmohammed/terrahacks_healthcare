@@ -27,6 +27,9 @@ from .views import (
     HospitalRequestsListView,
     AcceptHospitalRequestView,
     RejectHospitalRequestView,
+    
+    # Voice Processing
+    VoiceProcessView,
 )
 
 urlpatterns = [
@@ -47,6 +50,9 @@ urlpatterns = [
     # NEW: Enhanced Emergency & Admission Endpoints
     path('emergency/dispatch/', EmergencyDispatchView.as_view(), name='emergency_dispatch'),
     path('request-admission/', RequestAdmissionView.as_view(), name='request_admission'),
+    
+    # Voice Processing
+    path('voice/process/', VoiceProcessView.as_view(), name='voice_process'),
     
     # Hospital Dashboard Endpoints
     path('hospital/profile/', HospitalProfileUpdateView.as_view(), name='hospital_profile_update'),

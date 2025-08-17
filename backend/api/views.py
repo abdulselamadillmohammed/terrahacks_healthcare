@@ -22,6 +22,10 @@ from .mongo_client import get_db  # Make sure you have this function defined in 
 # For permission control
 from .permissions import IsPatient
 
+# For voice processing
+import speech_recognition as sr
+from io import BytesIO
+import tempfile
 
 # Load environment variables
 load_dotenv()
@@ -61,6 +65,135 @@ class IsPatient(permissions.BasePermission):
             request.user.is_authenticated and 
             request.user.user_type == 'patient'
         )
+
+# Voice Processing View
+class VoiceProcessView(APIView):
+    """Process voice audio and return transcript with intent classification"""
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated, IsPatient]
+    
+    def post(self, request):
+        try:
+            audio_data = request.data.get('audio_data')
+            if not audio_data:
+                return Response(
+                    {'error': 'No audio data provided'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Decode base64 audio data
+            audio_bytes = base64.b64decode(audio_data)
+            
+            # Create temporary file for audio processing
+            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
+                temp_file.write(audio_bytes)
+                temp_file_path = temp_file.name
+
+            # Initialize speech recognizer
+            recognizer = sr.Recognizer()
+            
+            # Load audio file
+            with sr.AudioFile(temp_file_path) as source:
+                audio = recognizer.record(source)
+                
+                # Perform speech recognition
+                try:
+                    transcript = recognizer.recognize_google(audio)
+                    
+                    # Classify intent using Gemini AI
+                    intent, confidence = self.classify_intent(transcript)
+                    
+                    # Clean up temporary file
+                    os.unlink(temp_file_path)
+                    
+                    return Response({
+                        'transcript': transcript,
+                        'intent': intent,
+                        'confidence': confidence
+                    })
+                    
+                except sr.UnknownValueError:
+                    os.unlink(temp_file_path)
+                    return Response({
+                        'transcript': '',
+                        'intent': 'unknown',
+                        'confidence': 0.0
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                    
+                except sr.RequestError as e:
+                    os.unlink(temp_file_path)
+                    return Response({
+                        'error': f'Speech recognition service error: {str(e)}'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    
+        except Exception as e:
+            return Response({
+                'error': f'Voice processing error: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def classify_intent(self, transcript):
+        """Use Gemini AI to classify the intent of the voice command"""
+        try:
+            # Configure Gemini AI
+            genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
+            model = genai.GenerativeModel('gemini-pro')
+            
+            prompt = f"""
+            Analyze this voice transcript and classify the intent:
+            Transcript: "{transcript}"
+            
+            Classify as one of:
+            1. "emergency" - if it contains emergency keywords like: emergency, help, 911, ambulance, heart attack, stroke, chest pain, can't breathe, bleeding, unconscious, accident, crash, fall, broken, severe pain, dizzy, fainting
+            2. "find_care" - if it contains care-related keywords like: hurt, pain, sick, fever, headache, nausea, vomiting, diarrhea, cough, cold, flu, injury, cut, burn, sprain, discomfort, symptoms, not feeling well
+            3. "general" - for other general queries
+            
+            Return only the intent classification and confidence score (0.0-1.0) in this format:
+            intent: [classification]
+            confidence: [score]
+            """
+            
+            response = model.generate_content(prompt)
+            response_text = response.text.strip()
+            
+            # Parse response
+            lines = response_text.split('\n')
+            intent = 'general'
+            confidence = 0.5
+            
+            for line in lines:
+                if line.startswith('intent:'):
+                    intent = line.split(':')[1].strip()
+                elif line.startswith('confidence:'):
+                    try:
+                        confidence = float(line.split(':')[1].strip())
+                    except:
+                        confidence = 0.5
+            
+            return intent, confidence
+            
+        except Exception as e:
+            print(f"Error in intent classification: {e}")
+            # Fallback classification
+            transcript_lower = transcript.lower()
+            
+            emergency_keywords = [
+                'emergency', 'help', '911', 'ambulance', 'heart attack', 'stroke',
+                'chest pain', 'can\'t breathe', 'bleeding', 'unconscious', 'accident',
+                'crash', 'fall', 'broken', 'severe pain', 'dizzy', 'fainting'
+            ]
+            
+            care_keywords = [
+                'hurt', 'pain', 'sick', 'fever', 'headache', 'nausea', 'vomiting',
+                'diarrhea', 'cough', 'cold', 'flu', 'injury', 'cut', 'burn', 'sprain',
+                'discomfort', 'symptoms', 'not feeling well'
+            ]
+            
+            if any(keyword in transcript_lower for keyword in emergency_keywords):
+                return 'emergency', 0.8
+            elif any(keyword in transcript_lower for keyword in care_keywords):
+                return 'find_care', 0.7
+            else:
+                return 'general', 0.5
 
 # Authentication and Registration Views
 class RegisterView(generics.CreateAPIView):

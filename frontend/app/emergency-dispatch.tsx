@@ -14,6 +14,7 @@ import {
 import { useLocalSearchParams, router } from "expo-router";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+import { useVoiceAssistantContext } from "@/components/VoiceAssistantProvider";
 
 interface HospitalData {
   id: number;
@@ -27,6 +28,7 @@ interface HospitalData {
 
 export default function EmergencyDispatchScreen() {
   const params = useLocalSearchParams();
+  const { speak } = useVoiceAssistantContext();
   const [hospitalData, setHospitalData] = useState<HospitalData | null>(null);
   const [reasoning, setReasoning] = useState<string>("");
   const [ttsScript, setTtsScript] = useState<string>("");
@@ -35,6 +37,7 @@ export default function EmergencyDispatchScreen() {
     longitude: number;
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isVoiceTriggered, setIsVoiceTriggered] = useState(false);
 
   useEffect(() => {
     // Parse the data passed from the emergency button
@@ -58,6 +61,13 @@ export default function EmergencyDispatchScreen() {
           longitude: parseFloat(params.userLongitude as string),
         });
       }
+
+      // Check if this was triggered by voice assistant
+      if (params.source === 'voice_assistant') {
+        setIsVoiceTriggered(true);
+        // Provide voice feedback for voice-triggered emergencies
+        speak("Emergency dispatch activated. I've found the nearest hospital for you.");
+      }
     } catch (error) {
       console.error("Error parsing emergency dispatch data:", error);
       Alert.alert(
@@ -68,7 +78,7 @@ export default function EmergencyDispatchScreen() {
     } finally {
       setLoading(false);
     }
-  }, [params]);
+  }, [params, speak]);
 
   const openDirections = () => {
     if (!hospitalData || !userLocation) return;
